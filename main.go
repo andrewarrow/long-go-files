@@ -172,16 +172,31 @@ func getExistingFiles(dir string) (map[string]bool, error) {
 func generateUniqueFilenameSuffix(functions []*ast.FuncDecl, hasTypes bool, baseFileName string, existingFiles map[string]bool, usedNames map[string]bool) string {
 	baseSuffix := generateFilenameSuffix(functions, hasTypes)
 	suffix := baseSuffix
-	counter := 1
 	
-	for {
-		filename := fmt.Sprintf("%s_%s.go", baseFileName, suffix)
-		if !existingFiles[filename] && !usedNames[suffix] {
-			return suffix
-		}
-		counter++
-		suffix = fmt.Sprintf("%s%d", baseSuffix, counter)
+	filename := fmt.Sprintf("%s_%s.go", baseFileName, suffix)
+	if !existingFiles[filename] && !usedNames[suffix] {
+		return suffix
 	}
+	
+	alternatives := []string{"core", "main", "base", "util", "helper", "common", "shared", "extra", "misc", "other", "new", "alt", "impl", "logic", "work", "task", "ops", "flow", "step", "part", "unit", "chunk", "block", "piece", "item", "elem", "node", "link", "path", "route", "view", "ctrl", "model", "data", "info", "meta", "config", "setup", "init", "boot", "start", "launch", "run", "exec", "proc", "action", "event", "state", "change", "update", "modify", "edit", "fix", "patch", "clean", "clear", "reset", "fresh", "quick", "fast", "slow", "temp", "local", "remote", "public", "private", "secure", "safe", "simple", "basic", "advanced", "custom", "special", "unique", "single", "multi", "batch", "group", "list", "set", "map", "tree", "graph", "queue", "stack", "buffer", "cache", "store", "load", "save", "fetch", "send", "recv", "sync", "async", "wait", "done", "ready", "active", "idle", "busy", "free", "open", "close", "lock", "unlock", "check", "test", "verify", "valid", "error", "warn", "debug", "trace", "log", "print", "show", "hide", "render", "draw", "build", "make", "craft", "forge", "shape", "form", "mold", "cast", "press", "push", "pull", "move", "shift", "slide", "jump", "skip", "next", "prev", "first", "last", "top", "bottom", "left", "right", "center", "middle", "inner", "outer", "upper", "lower", "high", "low", "big", "small", "large", "tiny", "huge", "mini", "full", "empty", "blank", "void", "null", "zero", "one", "two", "three", "many", "few", "some", "all", "none", "auto", "manual", "smart", "dumb", "cool", "warm", "hot", "cold", "wet", "dry", "soft", "hard", "light", "dark", "bright", "dim", "loud", "quiet", "fast", "slow", "old", "young", "rich", "poor", "true", "false", "good", "bad", "nice", "ugly", "clean", "dirty", "pure", "mixed", "solid", "liquid", "gas", "fire", "water", "earth", "air", "wood", "metal", "stone", "glass", "paper", "cloth", "rope", "wire", "pipe", "tube", "box", "bag", "cup", "bowl", "plate", "knife", "fork", "spoon", "tool", "gear", "part", "chip", "disk", "tape", "card", "key", "lock", "door", "window", "wall", "floor", "roof", "room", "house", "city", "town", "road", "street", "bridge", "river", "lake", "sea", "ocean", "mountain", "hill", "tree", "flower", "grass", "leaf", "seed", "fruit", "root", "branch", "trunk", "bark", "wood", "forest", "field", "farm", "garden", "park", "zoo", "museum", "school", "library", "store", "shop", "market", "bank", "office", "factory", "lab", "studio", "theater", "cinema", "restaurant", "cafe", "hotel", "hospital", "church", "temple", "castle", "tower", "bridge", "tunnel", "cave", "valley", "desert", "island", "beach", "shore", "coast", "port", "harbor", "dock", "ship", "boat", "plane", "train", "car", "bike", "truck", "bus", "taxi", "rocket", "satellite", "star", "moon", "sun", "planet", "comet", "meteor", "galaxy", "universe", "space", "time", "year", "month", "week", "day", "hour", "minute", "second", "moment", "instant", "flash", "spark", "flame", "smoke", "cloud", "rain", "snow", "ice", "frost", "dew", "mist", "fog", "wind", "storm", "thunder", "lightning", "rainbow", "shadow", "light", "beam", "ray", "wave", "sound", "music", "song", "voice", "word", "letter", "number", "symbol", "sign", "mark", "dot", "line", "curve", "circle", "square", "triangle", "diamond", "heart", "star", "cross", "arrow", "spiral", "wave", "grid", "mesh", "net", "web", "thread", "string", "rope", "chain", "link", "bond", "tie", "knot", "loop", "ring", "band", "strip", "belt", "strap", "handle", "grip", "hold", "grasp", "touch", "feel", "sense", "see", "look", "watch", "view", "scan", "search", "find", "seek", "hunt", "track", "follow", "lead", "guide", "direct", "point", "aim", "target", "goal", "end", "finish", "complete", "done", "over", "final", "last", "stop", "halt", "pause", "break", "rest", "sleep", "wake", "rise", "fall", "drop", "lift", "raise", "lower", "turn", "spin", "rotate", "twist", "bend", "fold", "open", "close", "shut", "seal", "break", "crack", "split", "join", "merge", "unite", "divide", "separate", "cut", "slice", "chop", "tear", "rip", "grab", "catch", "throw", "toss", "cast", "shoot", "fire", "blast", "explode", "crash", "smash", "hit", "strike", "punch", "kick", "stomp", "step", "walk", "run", "jog", "sprint", "rush", "hurry", "slow", "crawl", "climb", "jump", "leap", "hop", "skip", "dance", "swim", "dive", "float", "fly", "soar", "glide", "drift", "flow", "stream", "rush", "pour", "drip", "leak", "spill", "splash", "spray", "mist", "dust", "powder", "grain", "sand", "dirt", "mud", "clay", "rock", "stone", "pebble", "boulder", "crystal", "gem", "gold", "silver", "copper", "iron", "steel", "brass", "bronze", "tin", "lead", "zinc", "chrome", "nickel", "cobalt", "carbon", "silicon", "oxygen", "hydrogen", "nitrogen", "helium", "neon", "argon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"}
+	
+	for _, alt := range alternatives {
+		testSuffix := alt
+		filename = fmt.Sprintf("%s_%s.go", baseFileName, testSuffix)
+		if !existingFiles[filename] && !usedNames[testSuffix] {
+			return testSuffix
+		}
+	}
+	
+	for i := 1; i <= 999; i++ {
+		testSuffix := fmt.Sprintf("%s%d", baseSuffix, i)
+		filename = fmt.Sprintf("%s_%s.go", baseFileName, testSuffix)
+		if !existingFiles[filename] && !usedNames[testSuffix] {
+			return testSuffix
+		}
+	}
+	
+	return fmt.Sprintf("%s%d", baseSuffix, 999)
 }
 
 func generateFilenameSuffix(functions []*ast.FuncDecl, hasTypes bool) string {
