@@ -50,10 +50,17 @@ func splitGoFile(inputFile string, numFiles int) error {
 	baseFileName := strings.TrimSuffix(filepath.Base(inputFile), ".go")
 	outputDir := filepath.Dir(inputFile)
 
+	existingFiles, err := getExistingFiles(outputDir)
+	if err != nil {
+		return fmt.Errorf("failed to read directory: %v", err)
+	}
+
 	funcsPerFile := len(functions) / numFiles
 	if len(functions)%numFiles != 0 {
 		funcsPerFile++
 	}
+
+	usedNames := make(map[string]bool)
 
 	for i := 0; i < numFiles; i++ {
 		start := i * funcsPerFile
@@ -70,7 +77,8 @@ func splitGoFile(inputFile string, numFiles int) error {
 			typesForFile = typeDecls
 		}
 
-		suffix := generateFilenameSuffix(functions[start:end], i == 0)
+		suffix := generateUniqueFilenameSuffix(functions[start:end], i == 0, baseFileName, existingFiles, usedNames)
+		usedNames[suffix] = true
 		outputFile := filepath.Join(outputDir, fmt.Sprintf("%s_%s.go", baseFileName, suffix))
 		if err := writeGoFile(outputFile, packageName, imports, typesForFile, functions[start:end], fset); err != nil {
 			return fmt.Errorf("failed to write %s: %v", outputFile, err)
@@ -145,6 +153,35 @@ func writeGoFile(filename, packageName string, imports []*ast.ImportSpec, typeDe
 	defer f.Close()
 
 	return format.Node(f, fset, file)
+}
+
+func getExistingFiles(dir string) (map[string]bool, error) {
+	files := make(map[string]bool)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return files, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			files[entry.Name()] = true
+		}
+	}
+	return files, nil
+}
+
+func generateUniqueFilenameSuffix(functions []*ast.FuncDecl, hasTypes bool, baseFileName string, existingFiles map[string]bool, usedNames map[string]bool) string {
+	baseSuffix := generateFilenameSuffix(functions, hasTypes)
+	suffix := baseSuffix
+	counter := 1
+	
+	for {
+		filename := fmt.Sprintf("%s_%s.go", baseFileName, suffix)
+		if !existingFiles[filename] && !usedNames[suffix] {
+			return suffix
+		}
+		counter++
+		suffix = fmt.Sprintf("%s%d", baseSuffix, counter)
+	}
 }
 
 func generateFilenameSuffix(functions []*ast.FuncDecl, hasTypes bool) string {
