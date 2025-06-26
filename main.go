@@ -80,7 +80,10 @@ func splitGoFile(inputFile string, numFiles int) error {
 		suffix := generateUniqueFilenameSuffix(functions[start:end], i == 0, baseFileName, existingFiles, usedNames)
 		usedNames[suffix] = true
 		outputFile := filepath.Join(outputDir, fmt.Sprintf("%s_%s.go", baseFileName, suffix))
-		if err := writeGoFile(outputFile, packageName, imports, typesForFile, functions[start:end], fset); err != nil {
+		
+		requiredImports := analyzeRequiredImports(functions[start:end], typesForFile, imports)
+		
+		if err := writeGoFile(outputFile, packageName, requiredImports, typesForFile, functions[start:end], fset); err != nil {
 			return fmt.Errorf("failed to write %s: %v", outputFile, err)
 		}
 		fmt.Printf("Created: %s\n", outputFile)
@@ -234,4 +237,54 @@ func generateFilenameSuffix(functions []*ast.FuncDecl, hasTypes bool) string {
 	}
 	
 	return "funcs"
+}
+
+func analyzeRequiredImports(functions []*ast.FuncDecl, typeDecls []*ast.GenDecl, allImports []*ast.ImportSpec) []*ast.ImportSpec {
+	usedIdentifiers := make(map[string]bool)
+	
+	for _, fn := range functions {
+		ast.Inspect(fn, func(n ast.Node) bool {
+			switch node := n.(type) {
+			case *ast.SelectorExpr:
+				if ident, ok := node.X.(*ast.Ident); ok {
+					usedIdentifiers[ident.Name] = true
+				}
+			case *ast.Ident:
+				usedIdentifiers[node.Name] = true
+			}
+			return true
+		})
+	}
+	
+	for _, typeDecl := range typeDecls {
+		ast.Inspect(typeDecl, func(n ast.Node) bool {
+			switch node := n.(type) {
+			case *ast.SelectorExpr:
+				if ident, ok := node.X.(*ast.Ident); ok {
+					usedIdentifiers[ident.Name] = true
+				}
+			case *ast.Ident:
+				usedIdentifiers[node.Name] = true
+			}
+			return true
+		})
+	}
+	
+	var requiredImports []*ast.ImportSpec
+	for _, imp := range allImports {
+		var importName string
+		if imp.Name != nil {
+			importName = imp.Name.Name
+		} else {
+			importPath := strings.Trim(imp.Path.Value, `"`)
+			parts := strings.Split(importPath, "/")
+			importName = parts[len(parts)-1]
+		}
+		
+		if usedIdentifiers[importName] {
+			requiredImports = append(requiredImports, imp)
+		}
+	}
+	
+	return requiredImports
 }
